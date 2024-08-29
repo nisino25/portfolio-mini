@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poke choco</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Zen+Maru+Gothic:wght@400;900&display=swap" rel="stylesheet">
+    
+</head>
+<body>
+    <div id="app">
+        <div class="grid-container">
+            <div class="grid-item">
+                <div class="caught-display">
+                    <div v-for="(number, index) in result" :key="index">
+                        <img :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${picsArray[number]}.png`">
+                    </div>
+                </div>
+
+                <div class="open-button">
+                    <button @click="generateRandomNumber()">引く({{result.length}}回 目：&yen;{{(result.length + 16) * 275}})</button>
+                </div>
+
+                <div class="completed-grid">
+                    <template v-for="(count, num) in completed" :key="num">
+                        <div>
+                            <img :src="`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${picsArray[num]}.png`" alt="" :style="{ opacity: count === 0 ? 0.15 : 1 }">
+                            {{ count }} 
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="grid-item">
+                <table class="chances-table">
+                    <thead>
+                      <tr>
+                        <th>試行回数</th>
+                        <th>全部ゲットできる確率</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="(value, index) in chancesTable" :key="index">
+                        <td>{{ index + 16 }}回目 (<small>&yen;{{index * 275}}</small>)</td>
+                        <td>{{ 100 - value.toString().match(/^-?\d+(?:\.\d{0,6})?/)[0] * 100 }}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  
+            </div>
+        </div>
+    </div>
+
+    <!-- Vue 3 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    chancesTable: [],
+                    result: [],
+
+                    hasCompletedTheSet: false,
+                    picsArray: [
+                        25,
+                        906,
+                        909,
+                        912,
+                        967,
+                        926,
+                        980,
+                        960,
+                        
+
+                        
+                        921,
+                        915,
+                        928,
+
+                        971,
+
+                        924,
+                        939,
+                        999,
+                        151,
+
+                    ],
+
+
+
+                };
+            },
+            methods: {
+                simulateGacha() {
+                    this.chancesTable = [];
+                    for (let trial = 16; trial <= 250; trial++) {
+                        this.chancesTable.push(this.calculateCompletionProbability(trial));
+                    }
+                },
+                calculateCompletionProbability(trial) {
+                    let probability = 0;
+                    for (let i = 0; i < 16; i++) {
+                        probability += Math.pow(-1, i) * this.combination(16, i) * Math.pow((16 - i) / 16, trial);
+                    }
+                    return 1 - probability;
+                },
+                combination(n, k) {
+                    let result = 1;
+                    for (let i = 1; i <= k; i++) {
+                        result *= (n - i + 1) / i;
+                    }
+                    return result;
+                },
+
+                // ----------------------------------------
+                generateRandomNumber() {
+                    console.log(``)
+                    this.randomNumber = Math.floor(Math.random() * 16);
+                    this.result.push(this.randomNumber)
+                },
+
+            },
+            computed: {
+                completed() {
+                    const counts = {};
+                    for (let i = 0; i <= 15; i++) {
+                        counts[i] = this.result.filter(num => num === i).length;
+                    }
+
+                    // Check if everything has appeared once
+                    const allAppearedOnce = Object.values(counts).every(count => count > 0);
+
+
+                    if (allAppearedOnce && !this.hasCompletedTheSet) {
+                        this.hasCompletedTheSet = true;
+                        alert("Congratulations!");
+                    }
+
+                    return counts;
+                }
+            },
+
+            mounted(){
+                this.simulateGacha()
+            },
+           
+        }).mount('#app');
+    </script>
+
+    <style>
+        html,body{
+            background-color: #FFEEDB;
+            padding: 0;
+            margin: 0;
+        }
+
+        .grid-container{
+            display: grid;
+            grid-template-columns: 67.5% 30%;
+            justify-content: space-between;
+
+            height: calc(100vh - 40px);
+            padding: 20px;
+        }
+
+        .grid-item{
+            padding: 25px;
+            overflow: hidden;
+
+            max-height: 100;
+
+            position: relative;
+            /* height: 90%; */
+        }
+
+        .grid-item:last-child{
+            overflow: auto;
+        }
+
+        .chances-table {
+            border: 2px solid black;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .chances-table th,
+        .chances-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .chances-table th {
+            background-color: #f2f2f2;
+        }
+
+        .chances-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .chances-table tr:hover {
+            background-color: #eaeaea;
+        }
+
+
+
+
+
+        /* ------------------------------------- */
+        .caught-display{
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+
+            display: grid;
+            justify-content: left;
+
+            grid-template-columns: repeat(10, 1fr);
+            /* Adjust grid gap as needed */
+            gap: 10px;
+
+            margin: auto;
+
+            top: 0;
+            width: calc(100% - 50px);
+            height: 75%;
+            border: 2px solid black;
+
+            padding: 10px;
+
+            overflow: auto;
+            
+        }
+
+        .caught-display div{
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid black;
+
+            /* padding: 20px; */
+
+            aspect-ratio: 1/1;
+
+        }
+
+        .caught-display div img{
+            width: 80%;
+        }
+        .open-button{
+            position: absolute;
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .completed-grid{
+            position: absolute;
+            bottom: 0%;
+
+            border: 2px solid black;
+            width: calc(100% - 50px);
+
+            display: grid;
+            justify-content: left;
+
+            grid-template-columns: repeat(8, 1fr);
+            /* Adjust grid gap as needed */
+            gap: 10px;
+
+        }
+
+        .completed-grid img{
+            width: 50%;
+        }
+
+    </style>
+</body>
+
+</html>
+<!-- 
+
+-->

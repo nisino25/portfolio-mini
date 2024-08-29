@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake and Ladder Board</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Zen+Maru+Gothic:wght@400;900&display=swap" rel="stylesheet">
+    
+</head>
+<body>
+    <div id="app">
+        <div class="board">
+            <div class="row" v-for="(row, rowIndex) in organizedTiles" :key="rowIndex">
+              <div
+                class="tile"
+                v-for="(tile, tileIndex) in row"
+                :key="tile"
+                :id="`tile-${tile}`"
+                :style="{ backgroundColor: getTileColor(rowIndex, tileIndex) }"
+              >
+
+                <!-- {{ tile?.x }},{{ tile?.y }}<br> -->
+                {{ tile?.index }}
+              </div>
+            </div>
+
+            <div class="player" id="player-one" :style="{ left: coordinates?.x, bottom: coordinates?.y }"></div>
+
+        </div>
+        <div class="button-container">
+            <button @click="rollDice()" :disabled="isGameOver">Roll</button>
+        </div>
+    </div>
+
+    <!-- Vue 3 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    tiles: Array.from({ length: 50 }, (_, i) => i + 1),
+                    organizedTiles: null,
+                    colors: ['#69A2B3', '#143442', '#FD7E6B '],
+
+                    playerLocation: 1,
+                    isGameOver: false,
+
+                    isSleeping: false,
+                    sleepDuration: 0,
+                
+
+
+                };
+            },
+            methods: {
+                getTileColor(rowIndex, tileIndex) {
+                    const colorIndex = (rowIndex + tileIndex) % this.colors.length;
+                    return this.colors[colorIndex];
+                },
+
+                async rollDice(){
+                    // console.log(this.playerLocation)
+                    let randomInt = Math.floor(Math.random() * 6) + 1;
+                    console.log(`random: ${randomInt},${this.playerLocation},${this.playerLocation + randomInt}`)
+                    if (this.playerLocation + randomInt > 50) {
+                        console.log('too big now going back');
+                        const originalLocation = this.playerLocation; // Save the original location
+                        this.playerLocation = 50; // Temporarily set playerLocation to 50
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        const excess = originalLocation + randomInt - 50;
+                        this.playerLocation = 50 - excess; // Adjust playerLocation based on the excess
+                        return;
+                    }
+
+                    this.playerLocation += randomInt
+                    // console.log(this.playerLocation)
+                    if(this.playerLocation == 50) alert('congrats, the game is finished')
+                },
+
+                getLocation(tile){
+                    console.log(`hello`)
+                    let number
+                    if(!tile) number = 1
+                    // Get the element with id "tile-1"
+                    const element = document.getElementById(`tile-${number}`);
+                    console.log(element)
+                    if(!element)return
+
+                    // Get the bounding rectangle of the element
+                    const rect = element.getBoundingClientRect();
+
+                    // Calculate the center point coordinates
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    console.log(`top: ${centerX}px; left: ${centerY}px`)
+
+                    return `top: ${centerX}px; left: ${centerY}px`
+                },
+
+                async sleep(ms) {
+                    this.isSleeping = true;
+                    await new Promise(resolve => setTimeout(resolve, ms));
+                    this.isSleeping = false;
+                },
+            },
+            computed: {
+                coordinates() {
+                    if(!this.organizedTiles) return
+
+                    let matchingTile = this.organizedTiles.reduce((acc, val) => acc.concat(val), []).find(tile => tile.index === this.playerLocation);
+                    if(!matchingTile) return
+                    return {
+                        x: `${matchingTile?.x * 20 -10}% `,
+                        y: `${matchingTile?.y * 10 -10}% `
+                    };
+                }
+            },
+
+            mounted(){
+                const rows = [];
+                let index = 0; // Initialize the index
+                for (let i = 0; i < this.tiles.length; i += 5) {
+                    let row = this.tiles.slice(i, i + 5).map((tile, rowIndex) => ({
+                        ...tile,
+                        index: index++ + 1,  // Continuous index for all tiles
+                        x: rowIndex +1,      // x-coordinate (column number)
+                        y: Math.floor(i / 5) + 1,  // y-coordinate (row number) based on i
+                    }));
+
+                    if (Math.floor(i / 5) % 2 === 1) {
+                        row = row.map((tile) => ({
+                            ...tile,
+                            x: 6 - tile.x,  // Reverse the x-coordinate for odd rows
+                        })).reverse();
+                    }
+
+                    rows.push(row);
+                }
+
+                this.organizedTiles = rows.reverse();
+
+
+
+                this.getLocation()
+
+
+            },
+           
+        }).mount('#app');
+    </script>
+
+    <style>
+        html{
+            background-color: #FFEEDB;
+        }
+
+        .board {
+            opacity: .2;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+
+            width: 77.5vw;
+            /* width: 95vw; */
+            max-width: 400px;
+            margin: auto;
+
+            border: 4px solid black;
+            border-radius: 10px;
+
+            overflow: hidden;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+        }
+        .tile {
+            aspect-ratio: 1/1;
+            border: 4px solid black;
+            
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            /* position: relative; */
+
+            font-family: "Josefin Sans", sans-serif;
+            font-weight: 400;
+            font-size: 1.25em;
+            /* font-size: 1em; */
+            color: white;
+
+            display: flex;
+            justify-content: center;
+            align-items: center;
+
+            line-height: 1;
+        }
+
+        .player{
+            position: absolute;
+            transform: translate(-50%, -75%);
+
+            width: 25px;
+            aspect-ratio: 1/1;
+
+            border-radius: 50%;
+
+            background-color: #C69323;
+            border: 2px solid black;
+
+            transition: all 1s ease-in-out;
+        }
+
+        .button-container{
+            margin: 25px auto; 
+            display: flex;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .button-container button{
+
+        }
+
+    </style>
+</body>
+
+</html>
+<!-- 
+
+-->

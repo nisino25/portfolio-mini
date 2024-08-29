@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplified Clock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@1,300&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div id="clock">
+            <div class="circle seconds-circle">
+                <div class="ball seconds-ball" :style="ballStyle(xCord, yCord)"></div>
+            </div>
+            <div class="circle minutes-circle">
+                <div class="ball minutes-ball" :style="ballStyle(xMinsCord, yMinsCord)"></div>
+            </div>
+            <div class="circle hours-circle">
+                <div class="ball hours-ball" :style="ballStyle(xHoursCord, yHoursCord)"></div>
+            </div>
+            <div class="time-display">{{ currentTime }}</div>
+        </div>
+    </div>
+
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    xCord: 0, yCord: 0,
+                    xMinsCord: 0, yMinsCord: 0,
+                    xHoursCord: 0, yHoursCord: 0,
+                    currentTime: '',
+                }
+            },
+            methods: {
+                updateClock() {
+                    const now = new Date();
+                    const seconds = now.getSeconds() + now.getMilliseconds() / 1000;
+                    const minutes = now.getMinutes() + seconds / 60;
+                    const hours = now.getHours() + minutes / 60;
+
+                    this.updateHand(seconds, 60, 125, 'xCord', 'yCord');
+                    this.updateHand(minutes, 60, 375, 'xMinsCord', 'yMinsCord');
+                    this.updateHand(hours, 24, 250, 'xHoursCord', 'yHoursCord');
+
+                    this.currentTime = this.formatTime(now);
+                },
+                updateHand(value, max, radius, xProp, yProp) {
+                    const angle = 2 * Math.PI * (value / max) - Math.PI / 2;
+                    this[xProp] = radius * Math.cos(angle) + 'px';
+                    this[yProp] = radius * Math.sin(angle) + 'px';
+                },
+                ballStyle(x, y) {
+                    return { transform: `translate(calc(-50% + ${x}), calc(-50% + ${y}))` };
+                },
+                formatTime(date) {
+                    return date.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                }
+            },
+            mounted() {
+                setInterval(this.updateClock, 1000 / 60);
+            }
+        }).mount('#app');
+    </script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            font-family: 'Raleway', sans-serif;
+        }
+        #clock {
+            position: relative;
+            width: 750px;
+            height: 750px;
+            margin: 50px auto;
+        }
+        .circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 3px solid #47897D;
+            border-radius: 50%;
+            box-sizing: border-box;
+        }
+        .seconds-circle { width: 250px; height: 250px; }
+        .minutes-circle { width: 750px; height: 750px; }
+        .hours-circle { width: 500px; height: 500px; }
+        .ball {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+        }
+        .seconds-ball { width: 50px; height: 50px; background-color: #0077BE; }
+        .minutes-ball { width: 80px; height: 80px; background-color: #D2B48C; }
+        .hours-ball { width: 80px; height: 80px; background-color: #B7410E; }
+        .time-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 300%;
+            font-weight: bold;
+            color: #47897D;
+        }
+    </style>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グー・チョキ・パー 進化ゲーム</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        #app {
+            width: 100%;
+            max-width: 400px;
+        }
+        .game-container {
+            width: 100%;
+            height: 425px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        .item {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-wrap: nowrap;
+        }
+        .グー { background-color: #ff6b6b; color: white; }
+        .パー { background-color: #4caf50; color: white; }
+        .チョキ { background-color: #45b7d1; color: white; }
+        .stats {
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .stats h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .stat-label {
+            font-weight: bold;
+            color: #666;
+        }
+        .stat-value {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .グー-stat { color: #ff6b6b; }
+        .パー-stat { color: #4caf50; }
+        .チョキ-stat { color: #45b7d1; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="game-container" ref="container">
+            <div v-for="(item, index) in items" :key="index" 
+                 :class="['item', item.type]" 
+                 :style="{ left: item.x + 'px', top: item.y + 'px' }">
+                {{ item.type }}
+            </div>
+        </div>
+        <div class="stats">
+            <h2>要素数</h2>
+            <div class="stat-item">
+                <span class="stat-label">グー：</span>
+                <span class="stat-value グー-stat">{{ itemCounts.グー }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">パー：</span>
+                <span class="stat-value パー-stat">{{ itemCounts.パー }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">チョキ：</span>
+                <span class="stat-value チョキ-stat">{{ itemCounts.チョキ }}</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    items: [],
+                    types: ['グー', 'パー', 'チョキ'],
+                    itemSize: 30,
+                    animationFrame: null,
+                    speedMultiplier: 1
+                }
+            },
+            computed: {
+                itemCounts() {
+                    return {
+                        グー: this.items.filter(item => item.type === 'グー').length,
+                        パー: this.items.filter(item => item.type === 'パー').length,
+                        チョキ: this.items.filter(item => item.type === 'チョキ').length
+                    }
+                }
+            },
+            mounted() {
+                this.createItems()
+                this.animationFrame = requestAnimationFrame(this.moveItems)
+            },
+            unmounted() {
+                cancelAnimationFrame(this.animationFrame)
+            },
+            methods: {
+                createItems() {
+                    const containerRect = this.$refs.container.getBoundingClientRect()
+                    this.types.forEach(type => {
+                        for (let i = 0; i < 25; i++) {
+                            this.items.push({
+                                type,
+                                x: Math.random() * (containerRect.width - this.itemSize),
+                                y: Math.random() * (containerRect.height - this.itemSize),
+                                vx: (Math.random() - 0.5) * 2 * this.speedMultiplier,
+                                vy: (Math.random() - 0.5) * 2 * this.speedMultiplier
+                            })
+                        }
+                    })
+                },
+                moveItems() {
+                    const containerRect = this.$refs.container.getBoundingClientRect()
+                    this.items.forEach(item => {
+                        item.x += item.vx
+                        item.y += item.vy
+
+                        if (item.x < 0 || item.x > containerRect.width - this.itemSize) item.vx *= -1
+                        if (item.y < 0 || item.y > containerRect.height - this.itemSize) item.vy *= -1
+                    })
+
+                    this.checkCollisions()
+                    this.animationFrame = requestAnimationFrame(this.moveItems)
+                },
+                checkCollisions() {
+                    for (let i = 0; i < this.items.length; i++) {
+                        for (let j = i + 1; j < this.items.length; j++) {
+                            if (this.isColliding(this.items[i], this.items[j])) {
+                                this.resolveCollision(this.items[i], this.items[j])
+                            }
+                        }
+                    }
+                },
+                isColliding(item1, item2) {
+                    const dx = item1.x - item2.x
+                    const dy = item1.y - item2.y
+                    const distance = Math.sqrt(dx * dx + dy * dy)
+                    return distance < this.itemSize
+                },
+                resolveCollision(item1, item2) {
+                    const winningType = this.getWinningType(item1.type, item2.type)
+                    if (winningType) {
+                        const loser = item1.type === winningType ? item2 : item1
+                        loser.type = winningType
+                    }
+                },
+                getWinningType(type1, type2) {
+                    if (type1 === type2) return null
+                    if (
+                        (type1 === 'グー' && type2 === 'チョキ') ||
+                        (type1 === 'パー' && type2 === 'グー') ||
+                        (type1 === 'チョキ' && type2 === 'パー')
+                    ) {
+                        return type1
+                    }
+                    return type2
+                }
+            }
+        })
+
+        app.mount('#app')
+    </script>
+</body>
+</html>
